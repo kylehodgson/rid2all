@@ -1,0 +1,22 @@
+[Unit]
+Description=rid2all - Remote ID to SBS/tracking networks (DroneScout)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rid2all
+Group=plugdev
+ExecStart=/opt/rid2all/venv/bin/rid2all -c /etc/rid2all/config.toml
+Restart=always
+RestartSec=5
+# Serial device access: the service user must be in the group that owns
+# /dev/ttyACM* (plugdev on Raspberry Pi OS); DeviceAllow needs DevicePolicy
+# changes on top of that, so it is intentionally not set here.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

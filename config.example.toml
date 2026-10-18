@@ -1,0 +1,37 @@
+# rid2all configuration
+# Copy to /etc/rid2all/config.toml (or pass -c).
+
+[source]
+# Serial device of the DroneScout bridge/receiver (USB-CDC shows up as ttyACM*)
+device = "/dev/ttyACM0"
+# DroneScout only supports 115200 for now
+baud = 115200
+
+[sbs]
+# Serve SBS BaseStation locally — point readsb/ultrafeeder at this with
+# --net-sbs-in-port (or READSB_NET_CONNECTOR / an mlathub SBS input).
+[[sbs.listen]]
+bind = "0.0.0.0"
+port = 30003
+
+# Push SBS out to aggregators. wellclear.aero's SBS ingest port will be
+# published in the feeder docs; ADSB exchange-style networks that accept
+# SBS push can be added the same way. Reconnects automatically.
+#[[sbs.push]]
+#host = "feed.wellclear.aero"
+#port = 30006
+
+#[[sbs.push]]
+#host = "127.0.0.1"
+#port = 30006
+
+[track]
+# Drop a track this many seconds after its last radio message
+expire_seconds = 60
+# Emit position (MSG,3/4) at most this often, per aircraft
+position_interval = 1.0
+# Re-send identification (MSG,1) this often (also on callsign change)
+ident_interval = 30.0
+
+[log]
+level = "info"
