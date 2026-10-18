@@ -1,29 +1,42 @@
 # rid2all configuration
-# Copy to /etc/rid2all/config.toml (or pass -c).
+#
+# This example matches the default ultrafeeder integration (README §
+# "Integrating with ultrafeeder"): rid2all pushes SBS into ultrafeeder's
+# SBS input port, and ultrafeeder's normal aggregator feeds carry the
+# drones onward (e.g. wellclear.aero).
+#
+# Create this file BEFORE the first `docker compose up` — if the file is
+# missing, Docker creates a DIRECTORY at the mount point and the container
+# will refuse to start (see the entrypoint error for the fix).
 
 [source]
-# Serial device of the DroneScout bridge/receiver (USB-CDC shows up as ttyACM*)
+# Serial device of the DroneScout radio (USB-CDC shows up as ttyACM*;
+# check with `ls -l /dev/ttyACM*` — the owning group goes in compose's
+# user: "UID:GID" line, e.g. 1000:20 for dialout, 1000:46 for plugdev)
 device = "/dev/ttyACM0"
 # DroneScout only supports 115200 for now
 baud = 115200
 
 [sbs]
-# Serve SBS BaseStation locally — point readsb/ultrafeeder at this with
-# --net-sbs-in-port (or READSB_NET_CONNECTOR / an mlathub SBS input).
-[[sbs.listen]]
-bind = "0.0.0.0"
-port = 30003
+# Push into ultrafeeder's SBS input (documented ultrafeeder feature).
+# Requires on the ultrafeeder service:
+#   READSB_NET_SBS_INPUT_PORT=32006
+#   READSB_EXTRA_ARGS=--db-file=/rid-db/db.csv.gz   (for [db] below)
+#   volumes: rid-db shared (see compose-examples/ultrafeeder-service.yml)
+[[sbs.push]]
+host = "ultrafeeder"
+port = 32006
 
-# Push SBS out to aggregators. wellclear.aero's SBS ingest port will be
-# published in the feeder docs; ADSB exchange-style networks that accept
-# SBS push can be added the same way. Reconnects automatically.
+# Alternative (push directly to an aggregator over the internet) — add as
+# many [[sbs.push]] targets as you like:
 #[[sbs.push]]
 #host = "feed.wellclear.aero"
-#port = 30006
+#port = 30105    # WellClear Remote ID SBS ingest (feeder docs: HUB_SBS_IN_PORT)
 
-#[[sbs.push]]
-#host = "127.0.0.1"
-#port = 30006
+# Local debug listener (optional; `nc localhost 30003` to watch the stream):
+#[[sbs.listen]]
+#bind = "0.0.0.0"
+#port = 30003
 
 [track]
 # Drop a track this many seconds after its last radio message
@@ -35,11 +48,9 @@ ident_interval = 30.0
 
 [db]
 # Write a readsb aircraft-database csv.gz (tar1090-db format) with an entry
-# per detected Remote ID aircraft (type DRON/HRON) — this is what makes
-# tar1090 show the drone icon and fill Type code / Reg. Point ultrafeeder's
-# readsb at it with: READSB_EXTRA_ARGS=--db-file=/rid-db/db.csv.gz
-# (share this directory with the ultrafeeder container, e.g. a named volume)
-#output = "/rid-db/db.csv.gz"
+# per detected Remote ID aircraft (type Q1/Q4) — this is what makes tar1090
+# show the drone type + serial. Directory is shared with ultrafeeder (ro).
+output = "/rid-db/db.csv.gz"
 # Optional: the standard tar1090-db aircraft.csv.gz to concatenate (keeps
 # reg/type lookups for REAL aircraft on stations that also have an SDR).
 # gzip streams concatenate, so this is a plain file cat, no decompression.
