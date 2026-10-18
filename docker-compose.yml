@@ -17,8 +17,9 @@ services:
     image: rid2all:latest
     container_name: rid2all
     restart: unless-stopped
-    group_add:
-      - "${RID2ALL_TTY_GID:?set RID2ALL_TTY_GID to the gid of /dev/ttyACM0 on the host (plugdev is usually 46)}"
+    # Run as the host user that owns the config/rid-db dirs (uid 1000 on a
+    # default Raspberry Pi OS install), plus the group that owns the tty.
+    user: "${RID2ALL_UID:-1000}:${RID2ALL_TTY_GID:?set RID2ALL_TTY_GID to the gid of /dev/ttyACM0 on the host (plugdev is usually 46)}"
     devices:
       - /dev/ttyACM0:/dev/ttyACM0
     volumes:

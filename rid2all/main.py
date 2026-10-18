@@ -15,6 +15,7 @@ import time
 
 from . import __version__
 from .config import load_config
+from .db import RIDDbWriter
 from .sbs import SBSManager, encode_message
 from .source import MavlinkSource
 from .track import TrackTable
@@ -42,6 +43,7 @@ class Daemon:
         self._stopping = threading.Event()
         self.last_pos_emit: dict[str, float] = {}
         self.last_ident_emit: dict[str, float] = {}
+        self.db_writer = RIDDbWriter(cfg["db"]["output"], cfg["db"]["base"])
 
     def _on_odid(self, snapshot: dict):
         self.tracks.update_odid(snapshot)
@@ -54,6 +56,10 @@ class Daemon:
         cfg = self.cfg["track"]
         now = time.time()
         self.tracks.expire(now)
+        try:
+            self.db_writer.update(self.tracks.tracks)
+        except Exception as exc:  # noqa: BLE001 - db export must not kill SBS
+            log.warning("db export failed: %s", exc)
         for icao, track in self.tracks.tracks.items():
             if track.lat is None or track.lon is None:
                 continue

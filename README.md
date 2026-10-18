@@ -95,6 +95,29 @@ synthesized `FFxxxx` ICAO and the manufacturer-code callsign, and get
 included in whatever the stack feeds downstream (including your WellClear
 feed over beast).
 
+### Drone icon + aircraft details in tar1090
+
+With the `[db]` section in `config.toml` (default in the example configs),
+rid2all also writes a readsb **aircraft database** (`--db-file`, tar1090-db
+csv format) containing one entry per detected Remote ID aircraft:
+
+- type code `Q1`/`Q4` (Eurocontrol UAS designators) → tar1090's built-in
+  **drone icon** instead of the default aeroplane silhouette
+- description: "Unmanned Rotorcraft (Remote ID)" (or Unmanned Aircraft)
+- operator field: the full Remote ID serial number
+
+readsb picks up changes to the file automatically (30 s check), so newly
+detected drones get their icon within ~30 seconds without any restart.
+
+Stations that **also receive real aircraft** (SDR connected) should keep
+standard db lookups working: copy the base database out of the ultrafeeder
+image and configure `[db] base` — rid2all concatenates the two (gzip
+streams concatenate, no decompression needed):
+
+```sh
+docker cp ultrafeeder:/usr/local/share/tar1090/aircraft.csv.gz ./rid-db/base-aircraft.csv.gz
+```
+
 ## Other integrations
 
 ### plain readsb (bare metal)

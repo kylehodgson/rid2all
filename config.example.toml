@@ -33,5 +33,19 @@ position_interval = 1.0
 # Re-send identification (MSG,1) this often (also on callsign change)
 ident_interval = 30.0
 
+[db]
+# Write a readsb aircraft-database csv.gz (tar1090-db format) with an entry
+# per detected Remote ID aircraft (type DRON/HRON) — this is what makes
+# tar1090 show the drone icon and fill Type code / Reg. Point ultrafeeder's
+# readsb at it with: READSB_EXTRA_ARGS=--db-file=/rid-db/db.csv.gz
+# (share this directory with the ultrafeeder container, e.g. a named volume)
+#output = "/rid-db/db.csv.gz"
+# Optional: the standard tar1090-db aircraft.csv.gz to concatenate (keeps
+# reg/type lookups for REAL aircraft on stations that also have an SDR).
+# gzip streams concatenate, so this is a plain file cat, no decompression.
+# Copy it out of the ultrafeeder image on the host:
+#   docker cp ultrafeeder:/usr/local/share/tar1090/aircraft.csv.gz ./rid-db/base-aircraft.csv.gz
+#base = "/rid-db/base-aircraft.csv.gz"
+
 [log]
 level = "info"

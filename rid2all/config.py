@@ -18,6 +18,7 @@ DEFAULTS = {
         "position_interval": 1.0,
         "ident_interval": 30.0,
     },
+    "db": {"output": "", "base": ""},
     "log": {"level": "info"},
 }
 

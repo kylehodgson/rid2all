@@ -39,11 +39,12 @@ class Track:
     __slots__ = (
         "icao", "callsign", "lat", "lon", "alt_ft", "alt_is_geo",
         "gs_kt", "track_deg", "vr_fpm", "on_ground", "emergency",
-        "squawk", "ua_type", "last_seen", "last_ident", "new",
+        "squawk", "ua_type", "last_seen", "last_ident", "new", "rid_serial",
     )
 
     def __init__(self, icao: str, now: float):
         self.icao = icao
+        self.rid_serial = None
         self.callsign = ""
         self.lat = None
         self.lon = None
@@ -87,6 +88,7 @@ class TrackTable:
             track.callsign = callsign
 
         track.ua_type = snapshot["ua_type"]
+        track.rid_serial = snapshot["id"]
 
         location = snapshot["location"]
         if location:

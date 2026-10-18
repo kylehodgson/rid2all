@@ -22,6 +22,14 @@ expire_seconds = 60
 position_interval = 1.0
 ident_interval = 30.0
 
+# Aircraft db export -> tar1090 shows the drone icon + Type code/Reg.
+# Also set READSB_EXTRA_ARGS=--db-file=/rid-db/db.csv.gz on the ultrafeeder
+# service and share the rid-db volume (see ultrafeeder-service.yml).
+[db]
+output = "/rid-db/db.csv.gz"
+# Station also has an SDR? Keep real-aircraft db lookups (see README):
+#base = "/rid-db/base-aircraft.csv.gz"
+
 [log]
 level = "info"
 

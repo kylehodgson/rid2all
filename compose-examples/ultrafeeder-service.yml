@@ -30,7 +30,30 @@ services:
       - /dev/ttyACM0:/dev/ttyACM0
     volumes:
       - ./rid2all/config.toml:/data/config.toml:ro
+      - rid-db:/rid-db
     # Option B only — expose the listener to the host (not needed when
     # ultrafeeder connects over the compose network):
     # ports:
     #   - "30003:30003"
+
+# --- and on the ultrafeeder service, add: ---
+#
+#   environment:
+#     # ... existing env ...
+#     - READSB_NET_SBS_INPUT_PORT=32006
+#     # Drone icon + Type code/Reg in tar1090 (rid2all db export, [db] output):
+#     - READSB_EXTRA_ARGS=--db-file=/rid-db/db.csv.gz
+#   volumes:
+#     - rid-db:/rid-db:ro
+#
+# and declare the shared volume at the bottom of the stack's compose file:
+#
+# volumes:
+#   rid-db:
+#
+# If the station also has an SDR (real aircraft), keep standard db lookups:
+# copy the base db into the shared dir and set [db] base in config.toml:
+#   docker cp ultrafeeder:/usr/local/share/tar1090/aircraft.csv.gz ./rid-db/base-aircraft.csv.gz
+
+volumes:
+  rid-db:
