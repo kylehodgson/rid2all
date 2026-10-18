@@ -8,12 +8,22 @@ wellclear.aero.
 
 import argparse
 import logging
+import math
 import signal
 import sys
 import threading
 import time
 
 from . import __version__
+
+
+def haversine_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance in metres (small-distance approximation is fine)."""
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = p2 - p1
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 6371000.0 * 2 * math.asin(math.sqrt(a))
 from .config import load_config
 from .db import RIDDbWriter
 from .sbs import SBSManager, encode_message
@@ -43,6 +53,7 @@ class Daemon:
         self._stopping = threading.Event()
         self.last_pos_emit: dict[str, float] = {}
         self.last_ident_emit: dict[str, float] = {}
+        self.last_emitted_state: dict[str, tuple] = {}
         self.db_writer = RIDDbWriter(cfg["db"]["output"], cfg["db"]["base"])
 
     def _on_odid(self, snapshot: dict):
@@ -72,15 +83,39 @@ class Daemon:
                 track.new = False
             last_pos = self.last_pos_emit.get(icao, 0.0)
             if now - last_pos >= cfg["position_interval"]:
-                lines.append(encode_message(
-                    3, icao, alt_ft=track.alt_ft, lat=track.lat, lon=track.lon,
-                    vr_fpm=track.vr_fpm, squawk=track.squawk,
-                    alert=1 if track.emergency else 0,
-                    emergency=1 if track.emergency else 0,
-                    on_ground=1 if track.on_ground else 0, now=now))
-                lines.append(encode_message(
-                    4, icao, gs_kt=track.gs_kt, track_deg=track.track_deg, now=now))
-                self.last_pos_emit[icao] = now
+                # Position emission policy: stream at position_interval while the
+                # aircraft is moving (or its speed/alt changed); hold position
+                # while stationary — GNSS jitter on a parked/hovering aircraft
+                # otherwise floods consumers with ~1 m position noise that
+                # draws a blob around the icon in tar1090 and wastes hub
+                # bandwidth. A 10 s keep-alive keeps the track alive.
+                state = self.last_emitted_state.get(icao)
+                moved_m = 1e9 if state is None else haversine_m(
+                    state[0], state[1], track.lat, track.lon)
+                alt_changed = state is None or abs((track.alt_ft or 0) - state[2]) > 1.0
+                speed_changed = state is None or abs((track.gs_kt or 0) - state[3]) > 0.2
+                moving = (track.gs_kt or 0) > 1.0
+                emit_pos = (
+                    state is None
+                    or moving
+                    or speed_changed
+                    or alt_changed
+                    or moved_m > 5.0
+                    or now - last_pos >= 10.0  # keep-alive
+                )
+                if emit_pos:
+                    lines.append(encode_message(
+                        3, icao, alt_ft=track.alt_ft, lat=track.lat, lon=track.lon,
+                        vr_fpm=track.vr_fpm, squawk=track.squawk,
+                        alert=1 if track.emergency else 0,
+                        emergency=1 if track.emergency else 0,
+                        on_ground=1 if track.on_ground else 0, now=now))
+                    lines.append(encode_message(
+                        4, icao, gs_kt=track.gs_kt, track_deg=track.track_deg, now=now))
+                    self.last_pos_emit[icao] = now
+                    self.last_emitted_state[icao] = (
+                        track.lat, track.lon,
+                        track.alt_ft or 0, track.gs_kt or 0, 0)
             if lines:
                 self.sbs.broadcast(lines)
 
