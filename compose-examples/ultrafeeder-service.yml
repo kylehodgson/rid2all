@@ -21,7 +21,9 @@
 
 services:
   rid2all:
-    build: ./rid2all          # or image: ghcr.io/wellclear/rid2all:latest
+    image: ghcr.io/kylehodgson/rid2all:latest
+    # or build from a local clone instead:
+    # build: ./rid2all
     container_name: rid2all
     restart: unless-stopped
     group_add:

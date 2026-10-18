@@ -44,9 +44,27 @@ cp config.example.toml config.toml
 # the host group that owns the radio's serial device (usually plugdev)
 echo RID2ALL_TTY_GID=$(stat -c %g /dev/ttyACM0) >> .env
 
-docker compose up -d --build
+docker compose up -d
 
 docker compose logs -f
+```
+
+No clone needed — pull the published multi-arch image (amd64 + arm64)
+with a minimal compose file:
+
+```yaml
+# docker-compose.yml
+services:
+  rid2all:
+    image: ghcr.io/kylehodgson/rid2all:latest
+    restart: unless-stopped
+    user: "1000:$(stat -c %g /dev/ttyACM0)"
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+    volumes:
+      - ./config.toml:/data/config.toml:ro
+    ports:
+      - "30003:30003"
 ```
 
 Verify:
@@ -58,8 +76,11 @@ nc localhost 30003
 
 Docker notes:
 
-- The container runs non-root; `group_add` gives it access to
-  `/dev/ttyACM0` via the host group that owns the device.
+- The container runs non-root; the `user:` mapping gives it your uid (for
+  bind mounts) plus the host group that owns `/dev/ttyACM0` for the device.
+- Images are published to ghcr.io on every push to `main` and on tags
+  (`.github/workflows/release.yml`); pin a version with e.g.
+  `ghcr.io/kylehodgson/rid2all:0.1.0`.
 
 ## Integrating with ultrafeeder (docker compose)
 

@@ -13,8 +13,10 @@
 
 services:
   rid2all:
+    # published multi-arch image (amd64 + arm64); 'build:' is the fallback
+    # if you prefer building from the local checkout
+    image: ghcr.io/kylehodgson/rid2all:latest
     build: .
-    image: rid2all:latest
     container_name: rid2all
     restart: unless-stopped
     # Run as the host user that owns the config/rid-db dirs (uid 1000 on a

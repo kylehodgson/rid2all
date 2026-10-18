@@ -69,11 +69,11 @@ Add to the **ultrafeeder** service (sudoedit the file):
       - /opt/adsb/rid-db:/rid-db:ro
 ```
 
-Add rid2all as a new top-level service:
+Add rid2all as a new top-level service (published image, no clone needed):
 
 ```yaml
   rid2all:
-    build: /home/kylehodgson/projects/rid2all
+    image: ghcr.io/kylehodgson/rid2all:latest
     container_name: rid2all
     restart: unless-stopped
     # host user owning ./rid-db + plugdev gid for the tty
@@ -84,6 +84,9 @@ Add rid2all as a new top-level service:
       - /opt/adsb/rid2all-config.toml:/data/config.toml:ro
       - /opt/adsb/rid-db:/rid-db
 ```
+
+(To build from a local checkout instead, replace `image:` with
+`build: /home/kylehodgson/projects/rid2all`.)
 
 Notes:
 - `/dev/ttyACM0` — verify with `ls /dev/ttyACM*` after plugging the DS110 in.
