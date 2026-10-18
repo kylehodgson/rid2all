@@ -37,7 +37,7 @@ DroneScout DS110/DS220/DB120 ──MAVLink (USB serial)──▶ rid2all ──S
 ## Quick start (Raspberry Pi + DroneScout over USB, Docker)
 
 ```sh
-git clone https://github.com/wellclear/rid2all && cd rid2all
+git clone https://github.com/kylehodgson/rid2all && cd rid2all
 cp config.example.toml config.toml
 # edit config.toml: device path + push targets
 
@@ -204,4 +204,4 @@ track expiry and emit cadence, log level.
 - Works alongside: [readsb](https://github.com/wiedehopf/readsb),
   [tar1090](https://github.com/wiedehopf/tar1090),
   [ultrafeeder](https://github.com/sdr-enthusiasts/docker-readsb-protobuf),
-  [wellclear-infra](https://github.com/wellclear/wellclear-infra).
+  [wellclear-infra](https://github.com/kylehodgson/wellclear-infra).
