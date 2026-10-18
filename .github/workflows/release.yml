@@ -44,7 +44,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          # arm/v7: 32-bit Raspberry Pi OS userland (docker there requests
+          # linux/arm/v8 even on a 64-bit kernel, so arm64 alone isn't enough)
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
