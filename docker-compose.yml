@@ -1,0 +1,29 @@
+# rid2all standalone compose (feeder side).
+#
+# For an existing ultrafeeder stack, prefer the drop-in service in
+# compose-examples/ultrafeeder-service.yml instead of running this file
+# alongside it — see README §"Integrating with ultrafeeder".
+#
+# The DS110/DB120 radio shows up as /dev/ttyACM* (USB-CDC). Find the owning
+# group on the HOST: `stat -c %G /dev/ttyACM0` (usually plugdev), then
+# export its numeric gid as RID2ALL_TTY_GID, e.g. in a .env:
+#   RID2ALL_TTY_GID=46
+# If the device enumerates differently (ttyUSB0), change the device path
+# below and in config.toml.
+
+services:
+  rid2all:
+    build: .
+    image: rid2all:latest
+    container_name: rid2all
+    restart: unless-stopped
+    group_add:
+      - "${RID2ALL_TTY_GID:?set RID2ALL_TTY_GID to the gid of /dev/ttyACM0 on the host (plugdev is usually 46)}"
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+    volumes:
+      - ./config.toml:/data/config.toml:ro
+    ports:
+      # SBS listener (matches the example config's sbs.listen port 30003).
+      # Other containers on this compose network reach it as rid2all:30003.
+      - "30003:30003"

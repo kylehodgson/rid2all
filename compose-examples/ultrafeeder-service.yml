@@ -1,0 +1,36 @@
+# Drop-in rid2all service for an existing ultrafeeder docker-compose stack.
+#
+# Paste this service into the same docker-compose.yml as your ultrafeeder
+# container (it joins the stack's default network, so the service name
+# "rid2all" resolves automatically). No host port mapping is needed unless
+# you also want to consume the SBS stream from outside Docker.
+#
+# Two integration options — pick ONE (see README §ultrafeeder):
+#
+#   A) rid2all PUSHES into ultrafeeder (documented ultrafeeder feature):
+#      - here: set the push target to ultrafeeder:32006 (in config.toml)
+#      - on the ultrafeeder service, add:
+#          READSB_NET_SBS_INPUT_PORT=32006
+#
+#   B) ultrafeeder CONNECTS to rid2all's listener:
+#      - here: keep [[sbs.listen]] port 30003 (default config)
+#      - on the ultrafeeder service, add:
+#          READSB_NET_CONNECTOR=rid2all,30003,sbs_in
+#        (sbs_in is verified in upstream wiedehopf/readsb help.h; ultrafeeder
+#        passes READSB_NET_CONNECTOR straight through to readsb)
+
+services:
+  rid2all:
+    build: ./rid2all          # or image: ghcr.io/wellclear/rid2all:latest
+    container_name: rid2all
+    restart: unless-stopped
+    group_add:
+      - "${RID2ALL_TTY_GID:?set RID2ALL_TTY_GID in .env: stat -c %g /dev/ttyACM0}"
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
+    volumes:
+      - ./rid2all/config.toml:/data/config.toml:ro
+    # Option B only — expose the listener to the host (not needed when
+    # ultrafeeder connects over the compose network):
+    # ports:
+    #   - "30003:30003"

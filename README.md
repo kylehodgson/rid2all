@@ -12,8 +12,8 @@ It complements the open-source ADS-B stack rather than replacing it: your
 rid2all adds drones as a second receiver source.
 
 ```
-DroneScout DS110/DS220/DB120 ──MAVLink (USB serial)──▶ rid2all ──SBS──▶ readsb ──▶ tar1090 / networks
-                                                      │
+DroneScout DS110/DS220/DB120 ──MAVLink (USB serial)──▶ rid2all ──SBS──▶ ultrafeeder ──▶ tar1090 / networks
+                                                      │                        └──beast──▶ aggregators
                                                       └──SBS push──▶ feed.wellclear.aero (etc.)
 ```
 
@@ -34,20 +34,19 @@ DroneScout DS110/DS220/DB120 ──MAVLink (USB serial)──▶ rid2all ──S
 - Correct SBS field semantics (speed in **knots**, altitude in **feet**,
   GNSS altitude preferred, ODID ground/emergency status mapped to SBS flags).
 
-## Quick start (Raspberry Pi + DroneScout over USB)
+## Quick start (Raspberry Pi + DroneScout over USB, Docker)
 
 ```sh
-sudo apt install python3-venv
-sudo useradd -r -M -G plugdev rid2all          # plugdev owns /dev/ttyACM*
-sudo mkdir -p /opt/rid2all /etc/rid2all
-sudo cp -r . /opt/rid2all/src
-cd /opt/rid2all/src
-sudo python3 -m venv venv
-sudo venv/bin/pip install .                    # pulls pymavlink
-sudo cp config.example.toml /etc/rid2all/config.toml
-sudo cp systemd/rid2all.service /etc/systemd/system/
-sudo systemctl daemon-reload && sudo systemctl enable --now rid2all
-journalctl -u rid2all -f
+git clone https://github.com/wellclear/rid2all && cd rid2all
+cp config.example.toml config.toml
+# edit config.toml: device path + push targets
+
+# the host group that owns the radio's serial device (usually plugdev)
+echo RID2ALL_TTY_GID=$(stat -c %g /dev/ttyACM0) >> .env
+
+docker compose up -d --build
+
+docker compose logs -f
 ```
 
 Verify:
@@ -56,6 +55,69 @@ Verify:
 # watch the SBS stream (drone must be transmitting Remote ID in range)
 nc localhost 30003
 ```
+
+Docker notes:
+
+- The container runs non-root; `group_add` gives it access to
+  `/dev/ttyACM0` via the host group that owns the device.
+
+## Integrating with ultrafeeder (docker compose)
+
+rid2all is designed as a drop-in sidecar for an
+[ultrafeeder](https://github.com/sdr-enthusiasts/docker-adsb-ultrafeeder)
+stack: paste the service from `compose-examples/ultrafeeder-service.yml`
+into your stack's `docker-compose.yml` and use the matching config from
+`compose-examples/ultrafeeder-config.toml`. Both documented ultrafeeder
+ingest paths are supported:
+
+**Option A — rid2all pushes into ultrafeeder's SBS input port** (all in the
+ultrafeeder docs): in `config.toml`, push to `ultrafeeder:32006`, and on the
+ultrafeeder service set:
+
+```yaml
+- READSB_NET_SBS_INPUT_PORT=32006
+```
+
+**Option B — ultrafeeder connects to rid2all's listener**: keep `sbs.listen`
+on 30003 (the default) and on the ultrafeeder service set:
+
+```yaml
+- READSB_NET_CONNECTOR=rid2all,30003,sbs_in
+```
+
+(`sbs_in` is verified in upstream wiedehopf/readsb `help.h`; ultrafeeder
+passes `READSB_NET_CONNECTOR` straight through to readsb. Option A stays
+entirely within ultrafeeder's documented table, so prefer it if you want
+documented-only configuration.)
+
+Either way, drones appear on tar1090 next to aeroplanes, tagged with the
+synthesized `FFxxxx` ICAO and the manufacturer-code callsign, and get
+included in whatever the stack feeds downstream (including your WellClear
+feed over beast).
+
+## Other integrations
+
+### plain readsb (bare metal)
+
+Add an SBS input to `/etc/default/readsb` (append to `NET_OPTIONS`):
+
+```
+--net-sbs-in-port 30006
+```
+
+then restart readsb, and set rid2all's `sbs.push` to `127.0.0.1:30006`
+(or add a `--net-connector=<rid2all-host>,30003,sbs_in` line).
+
+### Pushing straight to aggregators
+
+Any SBS-ingesting network works via `sbs.push` with automatic reconnect —
+no local readsb needed. wellclear.aero's ingest port will be published in
+the feeder docs.
+
+## Running bare-metal instead
+
+`systemd/rid2all.service` + `pip install .` works too; see the unit file
+for the expected paths (`/etc/rid2all/config.toml`, venv at `/opt/rid2all`).
 
 ## Wiring it into the ADS-B stack
 

@@ -1,0 +1,32 @@
+# rid2all config.toml for the ultrafeeder drop-in (compose-examples/ultrafeeder-service.yml)
+#
+# Option A (push into ultrafeeder's SBS input listen port — documented):
+[[sbs.push]]
+host = "ultrafeeder"
+port = 32006
+# ...and on the ultrafeeder service set: READSB_NET_SBS_INPUT_PORT=32006
+
+# Option B (rid2all listens; ultrafeeder connects with sbs_in):
+# Comment out the push block above and uncomment this, then on the
+# ultrafeeder service set: READSB_NET_CONNECTOR=rid2all,30003,sbs_in
+#[[sbs.listen]]
+#bind = "0.0.0.0"
+#port = 30003
+
+[source]
+device = "/dev/ttyACM0"
+baud = 115200
+
+[track]
+expire_seconds = 60
+position_interval = 1.0
+ident_interval = 30.0
+
+[log]
+level = "info"
+
+# Push to aggregators in addition to ultrafeeder (wellclear.aero ingest port
+# TBP — see the WellClear feeder docs; any SBS-push aggregator works):
+#[[sbs.push]]
+#host = "feed.wellclear.aero"
+#port = 30006
