@@ -43,7 +43,8 @@ services:
 #   environment:
 #     # ... existing env ...
 #     - READSB_NET_SBS_INPUT_PORT=32006
-#     # Drone icon + Type code/Reg in tar1090 (rid2all db export, [db] output):
+#     # Drone icon + Type code/Reg in tar1090 (rid2all db export, [db] output).
+#     # CONTAINER path — the volume below maps the host dir to /rid-db.
 #     - READSB_EXTRA_ARGS=--db-file=/rid-db/db.csv.gz
 #   volumes:
 #     - rid-db:/rid-db:ro

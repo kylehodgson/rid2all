@@ -97,6 +97,8 @@ ultrafeeder service set:
 
 ```yaml
 - READSB_NET_SBS_INPUT_PORT=32006
+# plus, for the drone db export ([db] output) — CONTAINER path:
+- READSB_EXTRA_ARGS=--db-file=/rid-db/db.csv.gz
 ```
 
 **Option B — ultrafeeder connects to rid2all's listener**: keep `sbs.listen`
