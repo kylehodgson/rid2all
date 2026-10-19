@@ -11,6 +11,14 @@ It complements the open-source ADS-B stack rather than replacing it: your
 1090MHz feed keeps flowing through readsb/ultrafeeder exactly as before, and
 rid2all adds drones as a second receiver source.
 
+## Where the rest of the project lives
+
+| Repo | What it is |
+|---|---|
+| **rid2all** (this repo) | The bridge itself: DroneScout radio → SBS. MIT-licensed, standalone — no WellClear-specific code. |
+| [wellclear-infra](https://github.com/kylehodgson/wellclear-infra) | Public GPL/AGPL infrastructure for the [WellClear](https://wellclear.aero) community network: readsb hub, mlat-server, tar1090 map (including the Remote ID drone marker that renders rid2all tracks), and all **feeder-facing install docs** — see `feeder/remote-id.md` there for wiring rid2all into ultrafeeder. |
+| [wellclear](https://github.com/kylehodgson/wellclear) | Feeder portal, API, and stats — the private side of the network. Feeders push rid2all's SBS output here. |
+
 ```
 DroneScout DS110/DS220/DB120 ──MAVLink (USB serial)──▶ rid2all ──SBS──▶ ultrafeeder ──▶ tar1090 / networks
                                                       │                        └──beast──▶ aggregators
